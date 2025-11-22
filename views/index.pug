@@ -3,21 +3,62 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
-  ol
-  each val in todos
-    li
-      span= val.task + ' - '
-      if val.completed > 0
-        span Completed
-      else
-        pan Not Completed
-      form(method='POST' action='/delete')
-        input(type='hidden', name='id', value=val.id)
-        button(type='submit') Delete
+  
+  if todos.length === 0
+    p.no-tasks No tasks yet. Add one below!
+  else
+    ul.task-list
+      each val in todos
+        li.task-item(class=val.completed > 0 ? 'completed' : '')
+          .task-content
+            span.task-text= val.task
+            span.task-status
+              if val.completed > 0
+                | ✓ Completed
+              else
+                | ○ Not Completed
+          
+          .task-actions
+            // Toggle completion button
+            form.inline-form(method='POST' action='/toggle')
+              input(type='hidden', name='id', value=val.id)
+              button.btn.btn-toggle(type='submit')
+                if val.completed > 0
+                  | Mark Incomplete
+                else
+                  | Mark Complete
+            
+            // Edit button (shows prompt for simplicity)
+            form.inline-form(method='POST' action='/edit' onsubmit='return handleEdit(this, "' + val.task + '")')
+              input(type='hidden', name='id', value=val.id)
+              input(type='hidden', name='task', id='edit-task-' + val.id)
+              button.btn.btn-edit(type='submit') Edit
+            
+            // Delete button
+            form.inline-form(method='POST' action='/delete')
+              input(type='hidden', name='id', value=val.id)
+              button.btn.btn-delete(type='submit') Delete
 
   hr
-  h2 Add a new task
-  form(method='POST' action='/create')
-    label(for='task') Task:
-    input(type='text', name='task', id='task', required)
-    button(type='submit') Create Task
+  
+  h2 Add a New Task
+  form.task-form(method='POST' action='/create')
+    .form-group
+      label(for='task') Task:
+      input(type='text', name='task', id='task', placeholder='Enter your task...', required, minlength='1')
+    button.btn.btn-primary(type='submit') Create Task
+  
+  script.
+    function handleEdit(form, currentTask) {
+      const newTask = prompt('Edit task:', currentTask);
+      if (newTask === null) {
+        return false; // User cancelled
+      }
+      if (newTask.trim() === '') {
+        alert('Task cannot be blank!');
+        return false;
+      }
+      const id = form.querySelector('input[name="id"]').value;
+      form.querySelector('#edit-task-' + id).value = newTask;
+      return true;
+    }
